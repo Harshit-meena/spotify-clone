@@ -7,6 +7,7 @@ export interface Song {
   title: string;
   song_path: string;
   image_path: string;
+  is_premium?: boolean; // ✅ ADD THIS LINE
 }
 
 export interface UserDetails {

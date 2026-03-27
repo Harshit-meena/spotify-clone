@@ -1,16 +1,16 @@
-import { Song } from '@/types';
-
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
-import { supabase } from '@supabase/auth-ui-shared';
+import { Song } from "@/types";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 export const useLoadImage = (song: Song) => {
-  const supabaseClient = useSupabaseClient();
+  const supabase = createClientComponentClient();
 
-  if (!song) {
-    return null;
+  if (!song?.image_path) {
+    return "/images/liked.png"; // fallback image 🔥
   }
 
-  const { data: imageData } = supabaseClient.storage.from('images').getPublicUrl(song.image_path);
+  const { data } = supabase.storage
+    .from("images")
+    .getPublicUrl(song.image_path);
 
-  return imageData.publicUrl;
+  return data.publicUrl;
 };
