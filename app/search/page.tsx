@@ -1,8 +1,7 @@
+import Image from 'next/image'; // ✅ Added Image import
 import { getSongsByTitle } from '@/actions/getSongsByTitle';
-
 import { Header } from '@/components/Header';
 import { SearchInput } from '@/components/SearchInput';
-
 import { SearchContent } from './components/SearchContent';
 
 export const revalidate = 0;
@@ -65,7 +64,8 @@ const Search = async ({ searchParams }: SearchProps) => {
         {/* 🎵 RESULT TITLE */}
         {searchParams.title && (
           <h2 className="text-white text-xl font-semibold mb-4">
-            Results for "{searchParams.title}"
+            {/* ✅ FIXED: Wrapped in backticks to handle the " " error */}
+            {`Results for "${searchParams.title}"`}
           </h2>
         )}
 
@@ -78,9 +78,8 @@ const Search = async ({ searchParams }: SearchProps) => {
         ) : (
           <>
             {/* 🔥 GRID RESULTS */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-              <SearchContent songs={songs} />
-            </div>
+            {/* Removed the extra grid wrapper here because SearchContent usually handles its own layout */}
+            <SearchContent songs={songs} />
 
             {/* 🔥 EXTRA SECTION */}
             <div className="mt-12">
@@ -88,7 +87,7 @@ const Search = async ({ searchParams }: SearchProps) => {
                 You might also like 🎯
               </h2>
 
-              <div className="flex gap-4 overflow-x-auto pb-2">
+              <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
                 {songs.slice(0, 8).map((song) => (
                   <div
                     key={song.id}
@@ -102,10 +101,15 @@ const Search = async ({ searchParams }: SearchProps) => {
                       cursor-pointer
                     "
                   >
-                    <img
-                      src="/images/liked.png"
-                      className="rounded mb-3"
-                    />
+                    {/* ✅ FIXED: Replaced <img> with optimized <Image /> */}
+                    <div className="relative aspect-square w-full mb-3">
+                        <Image
+                          fill
+                          src={song.image_path || "/images/liked.png"}
+                          alt={`Cover for ${song.title}`}
+                          className="rounded object-cover"
+                        />
+                    </div>
                     <p className="text-sm font-medium truncate">
                       {song.title}
                     </p>
