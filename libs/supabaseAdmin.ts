@@ -8,8 +8,8 @@ import { stripe } from './stripe';
 import { toDateTime, validateUuid } from './helpers';
 
 export const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // 👈 CHANGE THIS LINE
 );
 
 const upsertProductRecord = async (product: Stripe.Product) => {
