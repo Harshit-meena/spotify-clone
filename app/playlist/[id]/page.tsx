@@ -6,17 +6,13 @@ import { useOnPlay } from '@/hooks/useOnPlay';
 import Image from 'next/image';
 import { useLoadImage } from '@/hooks/useLoadImage';
 
-// test change
-console.log("fix");
-
-// ✅ NEW COMPONENT (HOOK yaha use hoga)
+// ✅ SONG ITEM COMPONENT (HOOK yahi use hoga)
 const SongItem = ({ item, onPlay, removeSong }: any) => {
-  const imagePath = useLoadImage(item.songs); // ✅ CORRECT USAGE
+  const imagePath = useLoadImage(item.songs);
 
   return (
-    <div
-      className="flex items-center gap-x-4 bg-neutral-800 p-3 rounded-md hover:bg-neutral-700 transition group"
-    >
+    <div className="flex items-center gap-x-4 bg-neutral-800 p-3 rounded-md hover:bg-neutral-700 transition group">
+      
       {/* 🎵 IMAGE */}
       <div className="relative h-12 w-12">
         <Image
@@ -61,6 +57,7 @@ const PlaylistPage = ({ params }: { params: { id: string } }) => {
     fetchPlaylist();
   }, []);
 
+  // 🎵 FETCH SONGS
   const fetchSongs = async () => {
     const { data } = await supabase
       .from('playlist_songs')
@@ -70,6 +67,7 @@ const PlaylistPage = ({ params }: { params: { id: string } }) => {
     setSongs(data || []);
   };
 
+  // 📂 FETCH PLAYLIST
   const fetchPlaylist = async () => {
     const { data } = await supabase
       .from('playlists')
@@ -82,11 +80,13 @@ const PlaylistPage = ({ params }: { params: { id: string } }) => {
 
   const onPlay = useOnPlay(songs.map((s) => s.songs));
 
+  // ❌ REMOVE SONG
   const removeSong = async (id: string) => {
     await supabase.from('playlist_songs').delete().eq('id', id);
     fetchSongs();
   };
 
+  // ✏️ UPDATE NAME
   const updatePlaylistName = async () => {
     await supabase
       .from('playlists')
@@ -114,6 +114,7 @@ const PlaylistPage = ({ params }: { params: { id: string } }) => {
         <div>
           <p className="text-sm">Playlist</p>
 
+          {/* ✏️ EDIT NAME */}
           {editing ? (
             <div className="flex gap-x-2 items-center">
               <input
@@ -143,7 +144,7 @@ const PlaylistPage = ({ params }: { params: { id: string } }) => {
         </div>
       </div>
 
-      {/* 🔥 SONG LIST */}
+      {/* 🎶 SONG LIST */}
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {songs.map((item) => (
           <SongItem
