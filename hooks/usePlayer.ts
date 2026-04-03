@@ -3,11 +3,8 @@ import { create } from 'zustand';
 interface PlayerStore {
   ids: string[];
   activeId: string | null;
-
   volume: number;
-
   isShuffle: boolean;
-
   // 🔥 repeat modes
   repeatMode: 'off' | 'one' | 'all';
 
@@ -23,6 +20,7 @@ interface PlayerStore {
   setVolume: (volume: number) => void;
 
   close: () => void;
+  reset: () => void; // ✅ Added reset to the interface
 }
 
 export const usePlayer = create<PlayerStore>((set, get) => ({
@@ -107,5 +105,12 @@ export const usePlayer = create<PlayerStore>((set, get) => ({
   close: () =>
     set({
       activeId: null
+    }),
+
+  // ✅ Added reset function to clear everything on logout
+  reset: () => 
+    set({ 
+      ids: [], 
+      activeId: null 
     })
 }));
