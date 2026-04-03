@@ -6,6 +6,9 @@ import { useOnPlay } from '@/hooks/useOnPlay';
 import Image from 'next/image';
 import { useLoadImage } from '@/hooks/useLoadImage';
 
+// test change
+console.log("fix");
+
 // ✅ NEW COMPONENT (HOOK yaha use hoga)
 const SongItem = ({ item, onPlay, removeSong }: any) => {
   const imagePath = useLoadImage(item.songs); // ✅ CORRECT USAGE
