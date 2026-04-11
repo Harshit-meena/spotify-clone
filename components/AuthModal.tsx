@@ -12,21 +12,46 @@ import { useRouter } from 'next/navigation';
 import { useAuthModal } from '@/hooks/useAuthModal';
 
 export const AuthModal = () => {
-  //* Initializes Supabase client, Next.js router and session context.
   const supabaseClient = useSupabaseClient();
   const router = useRouter();
   const { session } = useSessionContext();
   const { onClose, isOpen } = useAuthModal();
 
-  //* Effect hook for handling session changes.
   useEffect(() => {
+    const createProfile = async () => {
+      if (!session?.user) return;
+
+      const user = session.user;
+
+      const email = user.email || '';
+      const baseName = email.split('@')[0];
+
+      const formattedName =
+        baseName.charAt(0).toUpperCase() + baseName.slice(1);
+
+      // ⭐ CHECK EXISTING PROFILE
+      const { data: existing } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (!existing) {
+        await supabaseClient.from('profiles').insert({
+          id: user.id,
+          full_name: formattedName,
+          email: user.email,
+        });
+      }
+    };
+
     if (session) {
+      createProfile(); // ⭐ IMPORTANT
       router.refresh();
       onClose();
     }
-  }, [session, router, onClose]);
+  }, [session, router, onClose, supabaseClient]);
 
-  //* Handler for modal open state changes.
   const onChange = (open: boolean) => {
     if (!open) {
       onClose();

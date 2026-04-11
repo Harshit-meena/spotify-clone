@@ -22,13 +22,19 @@ interface SidebarProps {
   songs: Song[];
 }
 
+type Playlist = {
+  id: string;
+  name: string;
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
   const pathname = usePathname();
   const player = usePlayer();
   const supabase = createClientComponentClient();
 
-  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [openModal, setOpenModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const routes = useMemo(
     () => [
@@ -48,29 +54,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
     [pathname]
   );
 
-  // 🔥 fetch playlists
+  // ✅ FETCH PLAYLISTS (USER BASED)
   const fetchPlaylists = async () => {
-    const { data } = await supabase.from('playlists').select('*');
-    if (data) setPlaylists(data);
+    setLoading(true);
+
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+
+    if (!userId) {
+      setPlaylists([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('playlists')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.log('Fetch Playlist Error:', error);
+    }
+
+    setPlaylists(data || []);
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchPlaylists();
   }, []);
 
-  // 🔥 create playlist
-  const handleCreatePlaylist = async (name: string) => {
-    const { data: userData } = await supabase.auth.getUser();
+  // ✅ REFRESH AFTER MODAL CLOSE
+  useEffect(() => {
+    if (!openModal) {
+      fetchPlaylists();
+    }
+  }, [openModal]);
 
-    await supabase.from('playlists').insert({
-      name,
-      user_id: userData.user?.id,
-    });
-
-    fetchPlaylists();
-  };
-
-  // 🔥 delete playlist
+  // ✅ DELETE PLAYLIST
   const deletePlaylist = async (id: string) => {
     await supabase.from('playlists').delete().eq('id', id);
     fetchPlaylists();
@@ -78,11 +99,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
 
   return (
     <>
-      {/* 🔥 MODAL */}
+      {/* ✅ MODAL (NO ERROR NOW) */}
       <CreatePlaylistModal
         isOpen={openModal}
         onClose={() => setOpenModal(false)}
-        onCreate={handleCreatePlaylist}
       />
 
       <div
@@ -92,6 +112,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
         )}
       >
         <div className="hidden md:flex flex-col gap-y-2 bg-black h-full w-[300px] p-2">
+          
+          {/* TOP ROUTES */}
           <Box>
             <div className="flex flex-col gap-y-4 px-5 py-4">
               {routes.map((item) => (
@@ -100,10 +122,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
             </div>
           </Box>
 
+          {/* LIBRARY + PLAYLIST */}
           <Box className="overflow-y-auto h-full">
             <Library songs={songs} />
 
-            {/* 🔥 PLAYLIST SECTION */}
+            {/* PLAYLIST SECTION */}
             <div className="px-5 mt-5">
               <div className="flex justify-between items-center">
                 <h3 className="text-white font-bold">My Playlists</h3>
@@ -116,14 +139,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
                 </button>
               </div>
 
-              {/* 🔥 PLAYLIST LIST */}
+              {/* PLAYLIST LIST */}
               <div className="mt-3 flex flex-col gap-y-2">
+
+                {/* LOADING */}
+                {loading && (
+                  <p className="text-neutral-400 text-sm">Loading...</p>
+                )}
+
+                {/* EMPTY */}
+                {!loading && playlists.length === 0 && (
+                  <p className="text-neutral-400 text-sm">
+                    No playlists yet 🎵
+                  </p>
+                )}
+
+                {/* DATA */}
                 {playlists.map((playlist) => (
                   <div
                     key={playlist.id}
                     className="flex items-center justify-between group"
                   >
-                    {/* ❤️ + NAME */}
                     <Link
                       href={`/playlist/${playlist.id}`}
                       className="flex items-center gap-x-2 text-neutral-400 hover:text-white"
@@ -132,7 +168,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
                       {playlist.name}
                     </Link>
 
-                    {/* ❌ DELETE */}
                     <button
                       onClick={() => deletePlaylist(playlist.id)}
                       className="text-red-400 opacity-0 group-hover:opacity-100 transition text-sm"
@@ -146,6 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
           </Box>
         </div>
 
+        {/* MAIN */}
         <main className="h-full flex-1 overflow-y-auto py-2">
           {children}
         </main>

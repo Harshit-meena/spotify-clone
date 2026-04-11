@@ -17,7 +17,7 @@ export const Player = () => {
 
   return (
     <FullPlayer
-      key={songUrl} // 🔥 IMPORTANT (fix song switching)
+      key={songUrl}
       song={song}
       songUrl={songUrl}
       onClose={() => player.close()}

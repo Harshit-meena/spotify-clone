@@ -2,16 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🔥 SMOOTH SCROLL ADD */
+/* 🔥 SMOOTH SCROLL */
 html {
   scroll-behavior: smooth;
 }
 
-html, body, :root {
+/* 🔥 GLOBAL RESET */
+html,
+body,
+:root {
   height: 100%;
   background-color: black;
   color-scheme: dark;
 }
+
+/* 🔥 ANIMATION */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -24,8 +29,10 @@ html, body, :root {
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.2s ease-in-out;
+  animation: fadeIn 0.25s ease-in-out;
 }
+
+/* 🔥 BODY TRANSITION */
 body {
-  transition: background 0.6s ease-in-out;
+  transition: background 0.5s ease-in-out;
 }

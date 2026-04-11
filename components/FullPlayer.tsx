@@ -46,7 +46,7 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
 
   const Icon = isPlaying ? BsPauseFill : BsPlayFill;
 
-  // 🔥 SOUND HOOK (CORRECT)
+  // 🔥 SOUND
   const [play, { pause, sound }] = useSound(songUrl, {
     volume: player.volume,
     html5: true,
@@ -56,7 +56,7 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
     onend: () => player.playNext()
   });
 
-  // 🔥 AUTO PLAY ON SONG CHANGE
+  // AUTO PLAY
   useEffect(() => {
     if (!sound) return;
 
@@ -67,14 +67,14 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
     };
   }, [sound, songUrl]);
 
-  // 🔊 VOLUME SYNC
+  // VOLUME
   useEffect(() => {
     if (sound) {
       sound.volume(player.volume);
     }
   }, [player.volume, sound]);
 
-  // ⏱ PROGRESS TRACKING
+  // PROGRESS
   useEffect(() => {
     const interval = setInterval(() => {
       if (sound) {
@@ -91,13 +91,13 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
     return () => clearInterval(interval);
   }, [sound]);
 
-  // 🎯 SEEK
+  // SEEK
   const handleSeek = (value: number) => {
     sound?.seek([value]);
     setProgress(value);
   };
 
-  // ▶ PLAY / PAUSE
+  // PLAY / PAUSE
   const togglePlay = () => {
     if (isPlaying) {
       pause();
@@ -106,7 +106,6 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
     }
   };
 
-  // ⏱ FORMAT TIME
   const formatTime = (time: number) => {
     if (!time) return '0:00';
     const m = Math.floor(time / 60);
@@ -121,7 +120,6 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
       transition={{ duration: 0.4 }}
       className="fixed inset-0 z-50 flex items-center justify-center text-white"
     >
-      {/* BACKGROUND */}
       <div
         className="absolute inset-0 blur-3xl scale-110 opacity-40"
         style={{
@@ -132,10 +130,8 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
       />
       <div className="absolute inset-0 bg-black/70" />
 
-      {/* CONTENT */}
       <div className="relative z-10 flex flex-col items-center px-4">
 
-        {/* CLOSE */}
         <div className="absolute top-4 left-4">
           <IoMdClose
             size={30}
@@ -144,7 +140,6 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
           />
         </div>
 
-        {/* IMAGE */}
         <div className="relative w-[260px] h-[260px] mb-8">
           <Image
             src={image || '/images/liked.png'}
@@ -154,7 +149,6 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
           />
         </div>
 
-        {/* INFO */}
         <h1 className="text-2xl font-bold">{song.title}</h1>
 
         <div className="flex items-center gap-3 mt-2">
@@ -170,7 +164,6 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
           </motion.div>
         </div>
 
-        {/* SEEK */}
         <div className="w-[300px] mt-6">
           <div className="flex items-center gap-2">
             <span className="text-xs">{formatTime(progress)}</span>
@@ -185,12 +178,10 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
           </div>
         </div>
 
-        {/* CONTROLS */}
         <div className="flex flex-col items-center mt-10 gap-4">
 
           <div className="flex items-center gap-8">
 
-            {/* SHUFFLE */}
             <AiOutlineSwap
               size={22}
               onClick={() => player.toggleShuffle()}
@@ -199,14 +190,12 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
               }`}
             />
 
-            {/* PREV */}
             <AiFillStepBackward
               size={28}
               onClick={() => player.playPrev()}
               className="cursor-pointer"
             />
 
-            {/* PLAY */}
             <div
               onClick={togglePlay}
               className="bg-white p-5 rounded-full cursor-pointer"
@@ -214,14 +203,12 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
               <Icon size={30} className="text-black" />
             </div>
 
-            {/* NEXT */}
             <AiFillStepForward
               size={28}
               onClick={() => player.playNext()}
               className="cursor-pointer"
             />
 
-            {/* REPEAT */}
             <RiRepeat2Line
               size={22}
               onClick={() => player.toggleRepeat()}
@@ -233,7 +220,6 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
             />
           </div>
 
-          {/* MODE TEXT */}
           <p className="text-xs text-neutral-400">
             {player.repeatMode === 'one'
               ? 'Repeat One 🔁'
@@ -243,7 +229,6 @@ export const FullPlayer: React.FC<FullPlayerProps> = ({
           </p>
         </div>
 
-        {/* VOLUME */}
         <div className="w-[200px] mt-8">
           <Slider
             value={player.volume}

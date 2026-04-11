@@ -6,6 +6,7 @@ import { useLoadImage } from '@/hooks/useLoadImage';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUser } from '@supabase/auth-helpers-react';
 
 interface SongItemProps {
   data: Song;
@@ -15,20 +16,71 @@ interface SongItemProps {
 export const SongItem: React.FC<SongItemProps> = ({ data, onClick }) => {
   const imagePath = useLoadImage(data);
   const supabase = createClientComponentClient();
+  const user = useUser();
 
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
 
-  // 🔥 Fetch playlists
+  // ✅ CHECK LIKED (FIXED)
   useEffect(() => {
-    const fetchPlaylists = async () => {
-      const { data } = await supabase.from('playlists').select('*');
-      if (data) setPlaylists(data);
-    };
-    fetchPlaylists();
-  }, [supabase]);
+    if (!user?.id) return;
 
-  // 🔥 Add song
+    const checkLiked = async () => {
+      const { data: likedData } = await supabase
+        .from('liked_songs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('song_id', data.id)
+        .maybeSingle(); // ✅ safer
+
+      setIsLiked(!!likedData);
+    };
+
+    checkLiked();
+  }, [user?.id, data.id, supabase]);
+
+  // ✅ FETCH PLAYLISTS
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchPlaylists = async () => {
+      const { data: playlistData } = await supabase
+        .from('playlists')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (playlistData) setPlaylists(playlistData);
+    };
+
+    fetchPlaylists();
+  }, [supabase, user?.id]);
+
+  // ✅ TOGGLE LIKE
+  const toggleLike = async (e: any) => {
+    e.stopPropagation();
+
+    if (!user?.id) return;
+
+    if (isLiked) {
+      await supabase
+        .from('liked_songs')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('song_id', data.id);
+
+      setIsLiked(false);
+    } else {
+      await supabase.from('liked_songs').insert({
+        user_id: user.id,
+        song_id: data.id,
+      });
+
+      setIsLiked(true);
+    }
+  };
+
+  // ✅ ADD TO PLAYLIST
   const addToPlaylist = async (playlistId: string) => {
     await supabase.from('playlist_songs').insert({
       playlist_id: playlistId,
@@ -38,9 +90,31 @@ export const SongItem: React.FC<SongItemProps> = ({ data, onClick }) => {
     setShowDropdown(false);
   };
 
+  // ✅ SAVE RECENTLY PLAYED
+  const saveRecentlyPlayed = async (songId: string) => {
+    if (!user?.id) return;
+
+    await supabase
+      .from('recently_played')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('song_id', songId);
+
+    await supabase.from('recently_played').insert({
+      user_id: user.id,
+      song_id: songId,
+    });
+  };
+
+  // ✅ HANDLE PLAY
+  const handlePlay = async () => {
+    onClick(data.id);
+    await saveRecentlyPlayed(data.id);
+  };
+
   return (
     <motion.div
-      onClick={() => onClick(data.id)}
+      onClick={handlePlay}
       whileHover={{ scale: 1.04, y: -5 }}
       transition={{ type: 'spring', stiffness: 250 }}
       className="
@@ -53,6 +127,15 @@ export const SongItem: React.FC<SongItemProps> = ({ data, onClick }) => {
     >
       {/* 🎵 IMAGE */}
       <div className="relative aspect-square rounded-md overflow-hidden">
+
+        {/* ❤️ LIKE BUTTON */}
+        <div
+          onClick={toggleLike}
+          className="absolute top-2 left-2 z-10 text-xl cursor-pointer"
+        >
+          {isLiked ? '❤️' : '🤍'}
+        </div>
+
         <motion.div
           whileHover={{ scale: 1.08 }}
           transition={{ duration: 0.3 }}
@@ -66,14 +149,14 @@ export const SongItem: React.FC<SongItemProps> = ({ data, onClick }) => {
           />
         </motion.div>
 
-        {/* 🔥 PREMIUM */}
+        {/* PREMIUM */}
         {data?.is_premium && (
           <div className="absolute top-2 right-2 bg-yellow-400 text-black text-xs px-2 py-1 rounded">
             Premium
           </div>
         )}
 
-        {/* ▶ PLAY BUTTON */}
+        {/* ▶ PLAY */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileHover={{ opacity: 1, y: 0 }}
@@ -91,13 +174,12 @@ export const SongItem: React.FC<SongItemProps> = ({ data, onClick }) => {
         <p className="text-neutral-400 text-sm truncate">{data.author}</p>
       </div>
 
-      {/* 🔥 PLAYLIST HOVER ZONE */}
+      {/* PLAYLIST */}
       <div
         className="relative mt-3"
         onMouseEnter={() => setShowDropdown(true)}
         onMouseLeave={() => setShowDropdown(false)}
       >
-        {/* BUTTON */}
         <button
           onClick={(e) => e.stopPropagation()}
           className="
@@ -109,7 +191,6 @@ export const SongItem: React.FC<SongItemProps> = ({ data, onClick }) => {
           + Playlist
         </button>
 
-        {/* 🔥 DROPDOWN */}
         <AnimatePresence>
           {showDropdown && (
             <motion.div
