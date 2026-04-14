@@ -1,23 +1,28 @@
 import { Sidebar } from '@/components/Sidebar';
-
 import './globals.css';
 
 import { Analytics } from '@vercel/analytics/react';
 
-import { Figtree } from 'next/font/google';
+import { Figtree, Syne } from 'next/font/google';
 
-import { SupabaseProvider } from '@/providers/SupabaseProvider';
-import { UserProvider } from '@/providers/UserProvider';
-import { ModalProvider } from '@/providers/ModalProvider';
-import { ToasterProvider } from '@/providers/ToasterProvider';
+import { SupabaseProvider }  from '@/providers/SupabaseProvider';
+import { UserProvider }      from '@/providers/UserProvider';
+import { ModalProvider }     from '@/providers/ModalProvider';
+import { ToasterProvider }   from '@/providers/ToasterProvider';
+import { ThemeProvider }     from '@/providers/ThemeProvider';
 
-import { getSongsByUserId } from '@/actions/getSongsByUserId';
-import { Player } from '@/components/Player';
+import { getSongsByUserId }            from '@/actions/getSongsByUserId';
+import { Player }                      from '@/components/Player';
 import { getActiveProductsWithPrices } from '@/actions/getActiveProductsWithPrices';
 
-const font = Figtree({ subsets: ['latin'] });
+const figtree = Figtree({ subsets: ['latin'], variable: '--font-figtree' });
 
-//* Describe the web app
+const syne = Syne({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-syne',
+});
+
 export const metadata = {
   title: 'Spotify Clone',
   description: 'Listen to music!',
@@ -25,29 +30,43 @@ export const metadata = {
 
 export const revalidate = 0;
 
-//* Main layout component for the app
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const userSongs = await getSongsByUserId();
-  const products = await getActiveProductsWithPrices();
+  const products  = await getActiveProductsWithPrices();
 
-  //* Providers & Components
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="../images/apple-touch-icon.png" />
+        <link rel="icon"              href="/favicon.ico" />
+        <link rel="apple-touch-icon"  sizes="180x180" href="../images/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon-16x16.png" />
+
+        {/* Prevent flash-of-wrong-theme on first load */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var t = localStorage.getItem('spotify-theme');
+                  if (t) document.documentElement.setAttribute('data-theme', t);
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
       </head>
-      <body className={font.className}>
-        <ToasterProvider />
-        <SupabaseProvider>
-          <UserProvider>
-            <ModalProvider products={products} />
-            <Sidebar songs={userSongs}>{children}</Sidebar>
-            <Player />
-          </UserProvider>
-        </SupabaseProvider>
+      <body className={`${figtree.variable} ${syne.variable} ${figtree.className}`}>
+        <ThemeProvider>
+          <ToasterProvider />
+          <SupabaseProvider>
+            <UserProvider>
+              <ModalProvider products={products} />
+              <Sidebar songs={userSongs}>{children}</Sidebar>
+              <Player />
+            </UserProvider>
+          </SupabaseProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

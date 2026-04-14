@@ -58,7 +58,7 @@ export const LikeButton: React.FC<LikeButtonProps> = ({ songId }) => {
 
   const handleLike = async () => {
     if (!user) {
-      return authModal.onOpen();
+      return authModal.onOpen('login');
     }
 
     // Validate user ID and song ID

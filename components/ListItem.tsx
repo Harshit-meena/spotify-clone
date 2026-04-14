@@ -2,36 +2,67 @@
 
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
+import { BsPlayFill } from 'react-icons/bs';
 
-import { FaPlay } from 'react-icons/fa';
-
-//* Define ListItemProps interface
 interface ListItemProps {
   image: string;
   name: string;
   href: string;
 }
 
-//* Define ListItem component
 export const ListItem: React.FC<ListItemProps> = ({ image, name, href }) => {
   const router = useRouter();
 
-  const onClick = () => {
-    router.push(href);
-  };
-
   return (
-    <button
-      onClick={onClick}
-      className="relative group flex items-center rounded-md overflow-hidden gap-x-4 bg-neutral-100/10 hover:bg-neutral-100/20 transition pr-4"
+    <motion.button
+      onClick={() => router.push(href)}
+      whileHover={{ scale: 1.03, y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      className="group relative flex items-center gap-x-3 overflow-hidden w-full rounded-xl pr-4 text-left"
+      style={{
+        background:    'var(--bg-glass)',
+        border:        '1px solid var(--border-default)',
+        backdropFilter:'blur(12px)',
+        minHeight: 60,
+      }}
     >
-      <div className="relative min-h-[64px] min-w-[64px]">
-        <Image className="object-cover" fill src={image} alt={image} />
+      {/* Hover glow overlay */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ background: 'linear-gradient(90deg, rgba(29,185,84,0.1) 0%, transparent 100%)' }}
+      />
+
+      {/* IMAGE */}
+      <div className="relative min-h-[60px] min-w-[60px] flex-shrink-0 overflow-hidden rounded-l-xl">
+        <Image className="object-cover" fill src={image} alt={name} />
       </div>
-      <p className="font-medium truncate py-5">{name}</p>
-      <div className="absolute transition opacity-0 rounded-full flex items-center justify-center bg-green-500 p-4 drop-shadow-md right-5 group-hover:opacity-100 hover:scale-110">
-        <FaPlay className="text-black" />
-      </div>
-    </button>
+
+      {/* NAME */}
+      <p
+        className="font-bold text-sm truncate flex-1 relative z-10"
+        style={{ color: 'var(--text-primary)' }}
+      >
+        {name}
+      </p>
+
+      {/* PLAY BUTTON */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.7 }}
+        animate={{ opacity: 1 }}
+        className="opacity-0 group-hover:opacity-100 transition-all duration-200 relative z-10 flex-shrink-0"
+      >
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center"
+          style={{
+            background: 'linear-gradient(135deg, var(--green), var(--green-dark))',
+            boxShadow:  '0 4px 15px var(--green-glow)',
+          }}
+        >
+          <BsPlayFill size={16} className="text-black ml-0.5" />
+        </div>
+      </motion.div>
+    </motion.button>
   );
 };

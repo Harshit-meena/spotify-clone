@@ -15,7 +15,7 @@ export const useOnPlay = (songs: Song[]) => {
 
   const onPlay = async (id: string) => {
     if (!user) {
-      return authModal.onOpen();
+      return authModal.onOpen('login');
     }
 
     const song = songs.find((song) => song.id === id);

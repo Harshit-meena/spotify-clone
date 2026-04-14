@@ -136,8 +136,13 @@ const CheckoutPage = () => {
         <div className="bg-neutral-900 p-4 rounded-lg mb-6 text-center">
           <p className="mb-2">Scan QR to pay</p>
 
-          <div className="bg-white w-[200px] h-[200px] mx-auto flex items-center justify-center text-black font-bold">
-            QR CODE
+          {/* 🔥 UPDATED QR */}
+          <div className="bg-white w-[200px] h-[200px] mx-auto flex items-center justify-center">
+            <img
+              src="/images/qr.png"
+              alt="QR Code"
+              className="w-full h-full object-cover"
+            />
           </div>
 
           <img

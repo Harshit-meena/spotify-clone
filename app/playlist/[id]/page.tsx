@@ -1,157 +1,170 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import Image from 'next/image';
-import { useOnPlay } from '@/hooks/useOnPlay';
+import { createClientComponentClient }      from '@supabase/auth-helpers-nextjs';
+import Image    from 'next/image';
+import { motion } from 'framer-motion';
+import { useOnPlay }    from '@/hooks/useOnPlay';
 import { useLoadImage } from '@/hooks/useLoadImage';
+import { BsPlayFill }   from 'react-icons/bs';
 
-// --- SUB-COMPONENT: SongItem ---
-// This fixes the "Rules of Hooks" error by calling useLoadImage at the top level
-const SongItem = ({ item, onPlay, removeSong }: any) => {
+const SongRow = ({ item, onPlay, removeSong }: any) => {
   const imagePath = useLoadImage(item.songs);
-
   return (
-    <div className="flex items-center gap-x-4 bg-neutral-800/50 p-3 rounded-md hover:bg-neutral-700/50 transition group">
-      <div className="relative h-12 w-12 min-h-[48px] min-w-[48px]">
-        <Image
-          fill
-          src={imagePath || '/images/liked.png'}
-          alt="Song cover"
-          className="object-cover rounded"
-        />
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex items-center gap-x-4 p-3 rounded-xl transition-all group"
+      style={{ background: 'var(--card-bg)', border: '1px solid var(--border-subtle)' }}
+      onMouseEnter={e => {
+        e.currentTarget.style.background  = 'var(--card-hover)';
+        e.currentTarget.style.borderColor = 'var(--border-default)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background  = 'var(--card-bg)';
+        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+      }}
+    >
+      <div className="relative h-12 w-12 min-w-[48px] rounded-lg overflow-hidden">
+        <Image fill src={imagePath || '/images/liked.png'} alt="cover" className="object-cover" />
       </div>
 
-      <div
-        onClick={() => onPlay(item.songs.id)}
-        className="flex-1 cursor-pointer truncate"
-      >
-        <p className="font-semibold truncate">{item.songs.title}</p>
-        <p className="text-sm text-neutral-400 truncate">
+      <div onClick={() => onPlay(item.songs.id)} className="flex-1 cursor-pointer min-w-0">
+        <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+          {item.songs.title}
+        </p>
+        <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>
           {item.songs.author}
         </p>
       </div>
 
+      <motion.button
+        onClick={() => onPlay(item.songs.id)}
+        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+        style={{ background: 'var(--green)', boxShadow: '0 4px 12px var(--green-glow)' }}
+      >
+        <BsPlayFill size={14} className="text-black ml-0.5" />
+      </motion.button>
+
       <button
         onClick={() => removeSong(item.id)}
-        className="text-neutral-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition px-2"
+        className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
+        style={{ color: 'rgba(239,68,68,0.8)', background: 'var(--bg-glass-hover)' }}
       >
         ✕
       </button>
-    </div>
+    </motion.div>
   );
 };
 
-// --- MAIN PAGE COMPONENT ---
 const PlaylistPage = ({ params }: { params: { id: string } }) => {
   const supabase = createClientComponentClient();
 
-  const [songs, setSongs] = useState<any[]>([]);
+  const [songs, setSongs]               = useState<any[]>([]);
   const [playlistName, setPlaylistName] = useState('My Playlist');
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing]           = useState(false);
 
-  // 1. Memoize fetchSongs so it can be a useEffect dependency
   const fetchSongs = useCallback(async () => {
     const { data } = await supabase
-      .from('playlist_songs')
-      .select('id, songs(*)')
-      .eq('playlist_id', params.id);
-
+      .from('playlist_songs').select('id, songs(*)').eq('playlist_id', params.id);
     setSongs(data || []);
   }, [supabase, params.id]);
 
-  // 2. Memoize fetchPlaylist so it can be a useEffect dependency
   const fetchPlaylist = useCallback(async () => {
     const { data } = await supabase
-      .from('playlists')
-      .select('*')
-      .eq('id', params.id)
-      .single();
-
+      .from('playlists').select('*').eq('id', params.id).single();
     if (data) setPlaylistName(data.name);
   }, [supabase, params.id]);
 
-  useEffect(() => {
-    fetchSongs();
-    fetchPlaylist();
-  }, [fetchSongs, fetchPlaylist]); // ✅ Dependencies now correctly tracked
+  useEffect(() => { fetchSongs(); fetchPlaylist(); }, [fetchSongs, fetchPlaylist]);
 
-  // 3. Initialize the play hook with the loaded songs
-  const onPlay = useOnPlay(songs.map((s) => s.songs));
-
+  const onPlay    = useOnPlay(songs.map((s) => s.songs));
   const removeSong = async (id: string) => {
-    const { error } = await supabase
-      .from('playlist_songs')
-      .delete()
-      .eq('id', id);
-    
-    if (!error) fetchSongs();
+    await supabase.from('playlist_songs').delete().eq('id', id);
+    fetchSongs();
   };
 
   const updatePlaylistName = async () => {
-    await supabase
-      .from('playlists')
-      .update({ name: playlistName })
-      .eq('id', params.id);
-
+    await supabase.from('playlists').update({ name: playlistName }).eq('id', params.id);
     setEditing(false);
   };
 
   return (
-    <div className="text-white h-full w-full overflow-hidden overflow-y-auto">
-      {/* HEADER SECTION */}
-      <div className="bg-gradient-to-b from-pink-600 via-red-500 to-neutral-900 p-6 flex items-end gap-x-6">
-        <div className="relative h-40 w-40 shadow-2xl">
-          <Image
-            fill
-            src="/images/liked.png"
-            alt="Playlist"
-            className="object-cover rounded-md"
-          />
+    <div
+      className="h-full w-full overflow-hidden overflow-y-auto"
+      style={{ background: 'var(--bg-primary)' }}
+    >
+      {/* HERO HEADER */}
+      <div
+        className="p-8 flex flex-col md:flex-row items-end gap-6"
+        style={{
+          background: 'linear-gradient(180deg, rgba(236,72,153,0.3) 0%, var(--bg-primary) 100%)',
+        }}
+      >
+        <div
+          className="relative h-44 w-44 rounded-2xl overflow-hidden flex-shrink-0"
+          style={{ boxShadow: '0 16px 48px rgba(0,0,0,0.3)' }}
+        >
+          <Image fill src="/images/liked.png" alt="Playlist" className="object-cover" />
         </div>
 
         <div className="flex flex-col gap-y-2">
-          <p className="hidden md:block font-semibold text-sm">Playlist</p>
+          <p
+            className="font-semibold text-xs uppercase tracking-widest"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Playlist
+          </p>
+
           {editing ? (
-            <div className="flex gap-x-2 items-center">
-              <input
-                autoFocus
-                value={playlistName}
-                onChange={(e) => setPlaylistName(e.target.value)}
-                onBlur={updatePlaylistName}
-                className="bg-black/20 text-4xl md:text-6xl font-bold px-2 py-1 rounded outline-none w-full"
-              />
-            </div>
+            <input
+              autoFocus
+              value={playlistName}
+              onChange={e => setPlaylistName(e.target.value)}
+              onBlur={updatePlaylistName}
+              onKeyDown={e => e.key === 'Enter' && updatePlaylistName()}
+              className="bg-transparent text-4xl md:text-5xl font-black outline-none border-b-2 pb-1"
+              style={{
+                color:       'var(--text-primary)',
+                borderColor: 'var(--green)',
+              }}
+            />
           ) : (
             <h1
               onClick={() => setEditing(true)}
-              className="text-4xl md:text-6xl font-bold cursor-pointer hover:opacity-80 transition"
+              className="text-4xl md:text-5xl font-black cursor-pointer hover:opacity-80 transition"
+              style={{ color: 'var(--text-primary)' }}
             >
               {playlistName}
             </h1>
           )}
-          <p className="text-neutral-200 text-sm">
-            {songs.length} songs
+
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            {songs.length} {songs.length === 1 ? 'song' : 'songs'}
           </p>
         </div>
       </div>
 
-      {/* LIST SECTION */}
+      {/* SONGS LIST */}
       <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {songs.length === 0 ? (
-            <p className="text-neutral-400 italic">No songs in this playlist yet.</p>
-          ) : (
-            songs.map((item) => (
-              <SongItem
-                key={item.id}
-                item={item}
-                onPlay={onPlay}
-                removeSong={removeSong}
-              />
-            ))
-          )}
-        </div>
+        {songs.length === 0 ? (
+          <div
+            className="flex flex-col items-center justify-center py-16 rounded-2xl"
+            style={{ background: 'var(--card-bg)', border: '1px dashed var(--border-default)' }}
+          >
+            <span className="text-5xl mb-4">🎵</span>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
+              No songs in this playlist yet
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {songs.map((item) => (
+              <SongRow key={item.id} item={item} onPlay={onPlay} removeSong={removeSong} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -2,37 +2,206 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🔥 SMOOTH SCROLL */
-html {
-  scroll-behavior: smooth;
+/* ── FONTS ── */
+:root {
+  --font-syne:    'Syne', sans-serif;
+  --font-figtree: 'Figtree', sans-serif;
 }
 
-/* 🔥 GLOBAL RESET */
-html,
-body,
-:root {
-  height: 100%;
-  background-color: black;
+/* ════════════════════════════════════
+   DARK THEME (default)
+════════════════════════════════════ */
+:root,
+[data-theme='dark'] {
+  --bg-primary:        #0a0a0a;
+  --bg-secondary:      #111111;
+  --bg-elevated:       #1a1a1a;
+  --bg-highlight:      #242424;
+  --bg-glass:          rgba(255, 255, 255, 0.05);
+  --bg-glass-hover:    rgba(255, 255, 255, 0.09);
+
+  --text-primary:      #ffffff;
+  --text-secondary:    rgba(255, 255, 255, 0.78);
+  --text-muted:        rgba(255, 255, 255, 0.48);
+
+  --border-subtle:     rgba(255, 255, 255, 0.07);
+  --border-default:    rgba(255, 255, 255, 0.12);
+  --border-strong:     rgba(255, 255, 255, 0.22);
+
+  --green:             #1DB954;
+  --green-dark:        #17a349;
+  --green-glow:        rgba(29, 185, 84, 0.35);
+  --green-glow-strong: rgba(29, 185, 84, 0.6);
+
+  --sidebar-bg:        #0a0a0a;
+  --player-bg:         rgba(15, 15, 15, 0.96);
+  --modal-bg:          #181818;
+  --modal-overlay:     rgba(0, 0, 0, 0.72);
+
+  /* dark = black+green gradient */
+  --header-gradient: linear-gradient(
+    180deg,
+    rgba(29, 185, 84, 0.22) 0%,
+    rgba(10, 10, 10, 0.0)   100%
+  );
+
+  --scrollbar-thumb:   rgba(255, 255, 255, 0.12);
+  --scrollbar-hover:   rgba(255, 255, 255, 0.25);
+
+  --input-bg:          rgba(255, 255, 255, 0.06);
+  --input-border:      rgba(255, 255, 255, 0.1);
+  --input-focus:       rgba(29, 185, 84, 0.5);
+
+  --card-bg:           rgba(255, 255, 255, 0.04);
+  --card-hover:        rgba(255, 255, 255, 0.09);
+  --card-shadow:       0 8px 32px rgba(0, 0, 0, 0.45);
+
+  --nav-btn-bg:        rgba(0, 0, 0, 0.5);
+  --nav-btn-border:    rgba(255, 255, 255, 0.1);
+  --toggle-bg:         rgba(255, 255, 255, 0.1);
+
+  /* Logo visibility */
+  --logo-white-display: block;
+  --logo-black-display: none;
+
   color-scheme: dark;
 }
 
-/* 🔥 ANIMATION */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ════════════════════════════════════
+   LIGHT THEME — Spotify-style white+green
+════════════════════════════════════ */
+[data-theme='light'] {
+  --bg-primary:        #ffffff;
+  --bg-secondary:      #f6f6f6;
+  --bg-elevated:       #ffffff;
+  --bg-highlight:      #eeeeee;
+  --bg-glass:          rgba(0, 0, 0, 0.04);
+  --bg-glass-hover:    rgba(0, 0, 0, 0.08);
+
+  --text-primary:      #121212;
+  --text-secondary:    #404040;
+  --text-muted:        #5a5a5a;
+
+  --border-subtle:     rgba(0, 0, 0, 0.07);
+  --border-default:    rgba(0, 0, 0, 0.12);
+  --border-strong:     rgba(0, 0, 0, 0.22);
+
+  --green:             #1DB954;
+  --green-dark:        #17a349;
+  --green-glow:        rgba(29, 185, 84, 0.22);
+  --green-glow-strong: rgba(29, 185, 84, 0.45);
+
+  --sidebar-bg:        #f6f6f6;
+  --player-bg:         rgba(242, 242, 242, 0.97);
+  --modal-bg:          #ffffff;
+  --modal-overlay:     rgba(0, 0, 0, 0.45);
+
+  /* light = white+green gradient like real Spotify */
+  --header-gradient: linear-gradient(
+    180deg,
+    rgba(29, 185, 84, 0.18) 0%,
+    rgba(255, 255, 255, 0.0) 100%
+  );
+
+  --scrollbar-thumb:   rgba(0, 0, 0, 0.15);
+  --scrollbar-hover:   rgba(0, 0, 0, 0.28);
+
+  --input-bg:          rgba(0, 0, 0, 0.05);
+  --input-border:      rgba(0, 0, 0, 0.12);
+  --input-focus:       rgba(29, 185, 84, 0.5);
+
+  --card-bg:           #f0f0f0;
+  --card-hover:        #e5e5e5;
+  --card-shadow:       0 4px 20px rgba(0, 0, 0, 0.08);
+
+  --nav-btn-bg:        rgba(0, 0, 0, 0.06);
+  --nav-btn-border:    rgba(0, 0, 0, 0.1);
+  --toggle-bg:         rgba(0, 0, 0, 0.07);
+
+  /* Logo visibility */
+  --logo-white-display: none;
+  --logo-black-display: block;
+
+  color-scheme: light;
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.25s ease-in-out;
-}
+/* ── LOGO SWITCHING via CSS ── */
+[data-theme='dark']  .theme-logo-white { display: block;  }
+[data-theme='dark']  .theme-logo-black { display: none;   }
+[data-theme='light'] .theme-logo-white { display: none;   }
+[data-theme='light'] .theme-logo-black { display: block;  }
 
-/* 🔥 BODY TRANSITION */
+/* default (before JS runs — assume dark) */
+.theme-logo-white { display: block;  }
+.theme-logo-black { display: none;   }
+
+/* ── SMOOTH SCROLL ── */
+html { scroll-behavior: smooth; }
+
+/* ── GLOBAL BASE ── */
+html, body, :root { height: 100%; }
+
 body {
-  transition: background 0.5s ease-in-out;
+  background-color: var(--bg-primary);
+  color:            var(--text-primary);
+  transition: background-color 0.35s ease, color 0.35s ease;
 }
+
+/* ── FADE IN ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn { animation: fadeIn 0.25s ease-in-out; }
+
+/* ── PLAYER GLOW PULSE ── */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px var(--green-glow); }
+  50%       { box-shadow: 0 0 45px var(--green-glow-strong); }
+}
+.glow-pulse { animation: glowPulse 2.5s ease-in-out infinite; }
+
+/* ── VINYL SPIN ── */
+@keyframes vinylSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.vinyl-spin        { animation: vinylSpin 8s linear infinite; }
+.vinyl-spin-paused { animation-play-state: paused; }
+
+/* ── EQUALIZER BARS ── */
+@keyframes eqBar {
+  0%, 100% { transform: scaleY(0.3); }
+  50%       { transform: scaleY(1);   }
+}
+.eq-bar {
+  transform-origin: bottom;
+  animation: eqBar 0.6s ease-in-out infinite;
+}
+.eq-bar:nth-child(1) { animation-delay: 0.00s; }
+.eq-bar:nth-child(2) { animation-delay: 0.10s; }
+.eq-bar:nth-child(3) { animation-delay: 0.20s; }
+.eq-bar:nth-child(4) { animation-delay: 0.15s; }
+.eq-bar:nth-child(5) { animation-delay: 0.05s; }
+
+/* ── THEME TOGGLE ANIMATION ── */
+@keyframes spinIn {
+  from { transform: rotate(-90deg) scale(0.5); opacity: 0; }
+  to   { transform: rotate(0deg)   scale(1);   opacity: 1; }
+}
+.theme-icon-enter { animation: spinIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* ── PLAYER PADDING ── */
+main, .main-content { padding-bottom: 5rem; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+/* ── SELECTION ── */
+::selection { background: var(--green-glow-strong); color: white; }
+
+/* ── FOCUS RING ── */
+*:focus-visible { outline: 2px solid var(--input-focus); outline-offset: 2px; }

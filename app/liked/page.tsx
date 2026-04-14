@@ -1,8 +1,7 @@
 import Image from 'next/image';
-
 import { getLikedSongs } from '@/actions/getLikedSongs';
-import { Header } from '@/components/Header';
-import { LikedContent } from './components/LikedContent';
+import { Header }        from '@/components/Header';
+import { LikedContent }  from './components/LikedContent';
 
 export const revalidate = 0;
 
@@ -11,62 +10,43 @@ const Liked = async () => {
 
   return (
     <div
-      className="
-        bg-neutral-900
-        rounded-lg
-        h-full
-        w-full
-        overflow-hidden
-        overflow-y-auto
-        "
+      className="rounded-lg h-full w-full overflow-hidden overflow-y-auto"
+      style={{ background: 'var(--bg-primary)' }}
     >
       <Header>
-        <div className="mt-20">
-          <div
-            className="
-                    flex 
-                    flex-col
-                    md:flex-row
-                    items-center
-                    gap-x-5
-                    "
-          >
+        <div className="mt-10">
+          <div className="flex flex-col md:flex-row items-center gap-x-6 gap-y-4">
+
+            {/* COVER */}
             <div
-              className="
-                        relative
-                        h-32
-                        w-32
-                        lg:h-44
-                        lg:w-44
-                        "
+              className="relative h-36 w-36 lg:h-48 lg:w-48 rounded-xl overflow-hidden flex-shrink-0"
+              style={{ boxShadow: '0 16px 48px rgba(0,0,0,0.3)' }}
             >
-              <Image fill alt="Playlist" className="object-cover" src="/images/liked.png" />
+              <Image fill alt="Liked Songs" className="object-cover" src="/images/liked.png" />
             </div>
-            <div
-              className="
-                        flex
-                        flex-col
-                        gap-y-2
-                        mt-4
-                        md:mt-0
-                        "
-            >
-              <p className="hidden md:block font-semibold text-sm">Playlist</p>
+
+            {/* INFO */}
+            <div className="flex flex-col gap-y-2">
+              <p
+                className="hidden md:block font-semibold text-xs uppercase tracking-widest"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Playlist
+              </p>
               <h1
-                className="
-                            text-white
-                            text-4xl
-                            sm:text-5xl
-                            lg:text-7xl
-                            font-bold
-                            "
+                className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tight"
+                style={{ color: 'var(--text-primary)' }}
               >
                 Liked Songs
               </h1>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+                {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+              </p>
             </div>
           </div>
         </div>
       </Header>
+
       <LikedContent songs={songs} />
     </div>
   );

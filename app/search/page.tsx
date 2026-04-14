@@ -1,127 +1,69 @@
-import Image from 'next/image'; // ✅ Added Image import
 import { getSongsByTitle } from '@/actions/getSongsByTitle';
 import { Header } from '@/components/Header';
-import { SearchInput } from '@/components/SearchInput';
+import SearchInput from '@/components/SearchInput';
 import { SearchContent } from './components/SearchContent';
 
 export const revalidate = 0;
 
 interface SearchProps {
-  searchParams: {
-    title: string;
-  };
+  searchParams: { title: string };
 }
 
 const Search = async ({ searchParams }: SearchProps) => {
-  const songs = await getSongsByTitle(searchParams.title);
+  const songs = await getSongsByTitle(searchParams?.title || '');
 
   return (
     <div
-      className="
-        bg-neutral-900
-        rounded-lg
-        h-full
-        w-full
-        overflow-hidden
-        overflow-y-auto
-      "
+      className="rounded-lg h-full w-full overflow-hidden overflow-y-auto"
+      style={{ background: 'var(--bg-primary)' }}
     >
-      {/* 🔥 HEADER */}
-      <Header className="bg-gradient-to-b from-purple-800 via-neutral-900 to-black">
-        <div className="mb-4 flex flex-col gap-y-6">
-          
-          {/* 🎯 TITLE */}
-          <h1 className="text-white text-3xl md:text-5xl font-bold tracking-tight">
-            Search 🔍
-          </h1>
+      <Header>
+        <div className="flex flex-col items-center gap-5 py-6">
 
-          {/* 🔎 SEARCH BAR */}
-          <div className="max-w-lg">
-            <SearchInput />
+          {/* SEARCH BAR */}
+          <div className="w-full max-w-2xl relative">
+            <div
+              className="relative rounded-full overflow-hidden"
+              style={{
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--border-default)',
+                backdropFilter: 'blur(12px)',
+              }}
+            >
+              <SearchInput />
+            </div>
           </div>
 
-          {/* 🔥 QUICK TAGS */}
-          <div className="flex gap-3 flex-wrap">
-            <span className="bg-neutral-800 px-4 py-2 rounded-full text-sm hover:bg-neutral-700 cursor-pointer">
-              🎧 Chill
-            </span>
-            <span className="bg-neutral-800 px-4 py-2 rounded-full text-sm hover:bg-neutral-700 cursor-pointer">
-              🔥 Trending
-            </span>
-            <span className="bg-neutral-800 px-4 py-2 rounded-full text-sm hover:bg-neutral-700 cursor-pointer">
-              ❤️ Love
-            </span>
-            <span className="bg-neutral-800 px-4 py-2 rounded-full text-sm hover:bg-neutral-700 cursor-pointer">
-              🎵 Pop
-            </span>
+          {/* ✅ FIXED (NO EVENTS) */}
+          <div className="flex gap-2 flex-wrap justify-center">
+            {['🔥 Trending', '🎧 Chill', '💔 Sad', '🚗 Drive', '💃 Party'].map((item) => (
+              <div
+                key={item}
+                className="px-4 py-1.5 rounded-full text-sm font-medium cursor-pointer transition-all hover:opacity-80"
+                style={{
+                  background: 'var(--bg-glass)',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                {item}
+              </div>
+            ))}
           </div>
+
         </div>
       </Header>
 
-      {/* 🔥 CONTENT */}
+      {/* RESULTS */}
       <div className="px-6 pb-10">
-        
-        {/* 🎵 RESULT TITLE */}
-        {searchParams.title && (
-          <h2 className="text-white text-xl font-semibold mb-4">
-            {/* ✅ FIXED: Wrapped in backticks to handle the " " error */}
-            {`Results for "${searchParams.title}"`}
-          </h2>
-        )}
+        <h2
+          className="text-2xl font-bold mb-6"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          🎵 Results
+        </h2>
 
-        {/* ❌ NO RESULTS */}
-        {songs.length === 0 ? (
-          <div className="text-neutral-400 text-center mt-20">
-            <p className="text-lg">No songs found 😢</p>
-            <p className="text-sm mt-2">Try searching something else</p>
-          </div>
-        ) : (
-          <>
-            {/* 🔥 GRID RESULTS */}
-            {/* Removed the extra grid wrapper here because SearchContent usually handles its own layout */}
-            <SearchContent songs={songs} />
-
-            {/* 🔥 EXTRA SECTION */}
-            <div className="mt-12">
-              <h2 className="text-white text-xl font-semibold mb-4">
-                You might also like 🎯
-              </h2>
-
-              <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-                {songs.slice(0, 8).map((song) => (
-                  <div
-                    key={song.id}
-                    className="
-                      min-w-[180px]
-                      bg-neutral-800/50
-                      p-3
-                      rounded-lg
-                      hover:bg-neutral-700
-                      transition
-                      cursor-pointer
-                    "
-                  >
-                    {/* ✅ FIXED: Replaced <img> with optimized <Image /> */}
-                    <div className="relative aspect-square w-full mb-3">
-                        <Image
-                          fill
-                          src={song.image_path || "/images/liked.png"}
-                          alt={`Cover for ${song.title}`}
-                          className="rounded object-cover"
-                        />
-                    </div>
-                    <p className="text-sm font-medium truncate">
-                      {song.title}
-                    </p>
-                    <p className="text-xs text-neutral-400">
-                      {song.author}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
+        <SearchContent songs={songs} />
       </div>
     </div>
   );
