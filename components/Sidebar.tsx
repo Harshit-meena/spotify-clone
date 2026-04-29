@@ -6,7 +6,8 @@ import { usePlayer } from '@/hooks/usePlayer';
 import { useMemo, useEffect, useState } from 'react';
 import { HiHome } from 'react-icons/hi';
 import { BiSearch } from 'react-icons/bi';
-import { FaHeart } from 'react-icons/fa';
+import { FaHeart, FaGift, FaRobot } from 'react-icons/fa'; 
+import { MdLyrics , MdGraphicEq } from 'react-icons/md';
 import Link from 'next/link';
 
 import { Box } from './Box';
@@ -38,8 +39,47 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
 
   const routes = useMemo(
     () => [
-      { icon: HiHome,   label: 'Home',   active: pathname !== '/search', href: '/' },
-      { icon: BiSearch, label: 'Search', active: pathname === '/search', href: '/search' },
+      {
+        icon: HiHome,
+        label: 'Home',
+        active:
+          pathname !== '/search' &&
+          pathname !== '/wrapped' &&
+          pathname !== '/ai-playlist' &&
+          pathname !== '/lyrics' &&
+          pathname !== '/visualizer',
+        href: '/',
+      },
+      {
+        icon: BiSearch,
+        label: 'Search',
+        active: pathname === '/search',
+        href: '/search',
+      },
+      {
+        icon: FaGift,
+        label: 'Your Wrapped',
+        active: pathname === '/wrapped',
+        href: '/wrapped',
+      },
+      {
+        icon: FaRobot, 
+        label: 'AI Playlist',
+        active: pathname === '/ai-playlist',
+        href: '/ai-playlist',
+      },
+      {
+        icon: MdLyrics, 
+        label: 'Lyrics',
+        active: pathname === '/lyrics',
+        href: '/lyrics',
+      },
+      {
+        icon: MdGraphicEq, // ✅ Add this
+        label: 'Visualizer',
+        active: pathname === '/visualizer',
+        href: '/visualizer',
+      },
     ],
     [pathname]
   );
@@ -48,15 +88,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
     setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData?.user?.id;
-    if (!userId) { setPlaylists([]); setLoading(false); return; }
-    const { data, error } = await supabase.from('playlists').select('*').eq('user_id', userId);
+
+    if (!userId) {
+      setPlaylists([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('playlists')
+      .select('*')
+      .eq('user_id', userId);
+
     if (error) console.log('Fetch Playlist Error:', error);
+
     setPlaylists(data || []);
     setLoading(false);
   };
 
-  useEffect(() => { fetchPlaylists(); }, []);
-  useEffect(() => { if (!openModal) fetchPlaylists(); }, [openModal]);
+  useEffect(() => {
+    fetchPlaylists();
+  }, []);
+
+  useEffect(() => {
+    if (!openModal) fetchPlaylists();
+  }, [openModal]);
 
   const deletePlaylist = async (id: string) => {
     await supabase.from('playlists').delete().eq('id', id);
@@ -65,16 +121,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
 
   return (
     <>
-      <CreatePlaylistModal isOpen={openModal} onClose={() => setOpenModal(false)} />
+      <CreatePlaylistModal
+        isOpen={openModal}
+        onClose={() => setOpenModal(false)}
+      />
 
-      <div className={twMerge('flex h-full', player.activeId && 'h-[calc(100%-80px)]')}>
-
-        {/* ── SIDEBAR ── */}
+      <div
+        className={twMerge(
+          'flex h-full',
+          player.activeId && 'h-[calc(100%-80px)]'
+        )}
+      >
+        {/* SIDEBAR */}
         <div
           className="hidden md:flex flex-col gap-y-2 h-full w-[300px] p-2"
           style={{ background: 'var(--sidebar-bg)' }}
         >
-          {/* TOP NAV BOX */}
+          {/* TOP NAV */}
           <Box>
             <div className="flex flex-col gap-y-4 px-5 py-4">
               {routes.map((item) => (
@@ -83,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
             </div>
           </Box>
 
-          {/* LIBRARY + PLAYLISTS */}
+          {/* LIBRARY */}
           <Box className="overflow-y-auto h-full">
             <Library songs={songs} />
 
@@ -96,15 +159,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
                 >
                   My Playlists
                 </h3>
+
                 <button
                   onClick={() => setOpenModal(true)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all"
+                  className="w-7 h-7 rounded-full flex items-center 
+                    justify-center text-sm font-bold transition-all"
                   style={{
                     background: 'var(--green)',
                     color: 'black',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--green-dark)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--green)')}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = 'var(--green-dark)')
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = 'var(--green)')
+                  }
                 >
                   +
                 </button>
@@ -112,30 +181,53 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, songs }) => {
 
               <div className="flex flex-col gap-y-1">
                 {loading && (
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading...</p>
+                  <p
+                    className="text-sm"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    Loading...
+                  </p>
                 )}
+
                 {!loading && playlists.length === 0 && (
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No playlists yet 🎵</p>
+                  <p
+                    className="text-sm"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    No playlists yet 🎵
+                  </p>
                 )}
+
                 {playlists.map((playlist) => (
                   <div
                     key={playlist.id}
-                    className="flex items-center justify-between group px-2 py-1.5 rounded-lg transition-all"
-                    style={{ background: 'transparent' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-glass-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    className="flex items-center justify-between 
+                      group px-2 py-1.5 rounded-lg transition-all"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background =
+                        'var(--bg-glass-hover)')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = 'transparent')
+                    }
                   >
                     <Link
                       href={`/playlist/${playlist.id}`}
-                      className="flex items-center gap-x-2 text-sm font-medium truncate transition-colors"
+                      className="flex items-center gap-x-2 text-sm 
+                        font-medium truncate"
                       style={{ color: 'var(--text-secondary)' }}
                     >
-                      <FaHeart className="text-pink-500 flex-shrink-0" size={12} />
+                      <FaHeart
+                        className="text-pink-500 flex-shrink-0"
+                        size={12}
+                      />
                       <span className="truncate">{playlist.name}</span>
                     </Link>
+
                     <button
                       onClick={() => deletePlaylist(playlist.id)}
-                      className="text-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2"
+                      className="text-xs opacity-0 group-hover:opacity-100 
+                        transition-opacity ml-2"
                       style={{ color: 'rgba(239,68,68,0.7)' }}
                     >
                       ✕

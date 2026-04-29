@@ -3,6 +3,7 @@ import { getRecentlyPlayed } from '@/actions/getRecentlyPlayed';
 
 import { Header }      from '@/components/Header';
 import { ListItem }    from '@/components/ListItem';
+import MemoryLane from '@/components/MemoryLane';
 import { PageContent } from './components/PageContent';
 import { SongCard }    from '@/components/SongCard';
 
@@ -28,12 +29,12 @@ export default async function Home() {
           {/* THEME-AWARE LOGO — white logo for dark, black logo for light */}
           <img
             src="/images/logo.png"
-            alt="Spotify"
+            alt="Hashify"
             className="theme-logo-white h-14 mb-2 hover:scale-105 transition"
           />
           <img
             src="/images/logo_black.png"
-            alt="Spotify"
+            alt="Hashify"
             className="theme-logo-black h-14 mb-2 hover:scale-105 transition"
           />
 
@@ -41,17 +42,17 @@ export default async function Home() {
             className="text-3xl md:text-5xl font-bold tracking-tight text-center mt-1"
             style={{ color: 'var(--text-primary)' }}
           >
-            Welcome back 👋
+            Welcome back 
           </h1>
           <p className="mt-2 text-sm text-center" style={{ color: 'var(--text-muted)' }}>
-            Your vibe. Your music. 🎧
+            Your vibe. Your music. 
           </p>
 
           {/* QUICK CARDS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-6 w-full">
-            <ListItem image="/images/liked.png" name="❤️ Liked Songs"     href="/liked" />
-            <ListItem image="/images/liked.png" name="🔥 Trending"        href="/" />
-            <ListItem image="/images/liked.png" name="🎧 Recently Played" href="#recent" />
+            <ListItem image="/images/liked.png" name=" Liked Songs"     href="/liked" />
+            <ListItem image="/images/liked.png" name=" Trending"        href="/" />
+            <ListItem image="/images/liked.png" name=" Recently Played" href="#recent" />
           </div>
         </div>
       </Header>
@@ -59,14 +60,14 @@ export default async function Home() {
       <div className="mt-2 mb-7 px-6">
 
         <h1 className="text-2xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-          Newest Songs 🚀
+          Newest Songs 
         </h1>
         <PageContent songs={songs} />
 
         {/* RECENTLY PLAYED */}
         <div id="recent" className="mt-12">
           <h2 className="text-2xl font-semibold mb-5" style={{ color: 'var(--text-primary)' }}>
-            Recently Played 🕒
+            Recently Played 
           </h2>
           {!recentSongs || recentSongs.length === 0 ? (
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No recently played songs</p>
@@ -84,7 +85,7 @@ export default async function Home() {
         {/* MADE FOR YOU */}
         <div className="mt-12">
           <h2 className="text-2xl font-semibold mb-5" style={{ color: 'var(--text-primary)' }}>
-            Made For You 🎯
+            Made For You 
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
             {songs.slice(0, 6).map((song: any) => (

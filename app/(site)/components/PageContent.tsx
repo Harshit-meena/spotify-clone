@@ -3,9 +3,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SongItem } from '@/components/SongItem';
+
 import { useOnPlay } from '@/hooks/useOnPlay';
 import { usePlayer } from '@/hooks/usePlayer';
-import { Song } from '@/types';
+import { Song }      from '@/types';
+
+// ✅ Naye imports
+import WeatherMusic from '@/components/WeatherMusic';
+import MemoryLane   from '@/components/MemoryLane';
 
 interface PageContentProps {
   songs: Song[];
@@ -31,23 +36,36 @@ export const PageContent: React.FC<PageContentProps> = ({ songs }) => {
 
   if (songs.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center py-16 rounded-2xl mt-4"
-        style={{
-          background: 'var(--card-bg)',
-          border: '1px dashed var(--border-default)',
-        }}
-      >
-        <span className="text-5xl mb-4">🎵</span>
-        <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-          No songs available yet
-        </p>
+      <div className="flex flex-col gap-6">
+
+        {/* ✅ Weather + Memory - songs nahi hain tab bhi dikhao */}
+        <WeatherMusic />
+        <MemoryLane />
+
+        <div
+          className="flex flex-col items-center justify-center py-16 rounded-2xl mt-4"
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px dashed var(--border-default)',
+          }}
+        >
+          <span className="text-5xl mb-4">🎵</span>
+          <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+            No songs available yet
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="mt-2">
+
+      {/* ✅ WEATHER MUSIC - Sabse Upar */}
+      <WeatherMusic />
+
+      {/* ✅ MEMORY LANE - Weather ke neeche */}
+      <MemoryLane />
 
       {/* CATEGORY PILLS */}
       <div className="flex gap-2 flex-wrap mb-6">

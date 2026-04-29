@@ -52,7 +52,7 @@ const SubscribeModal: React.FC<subscribeModalProps> = ({ products }) => {
           onClick={handleSubscribe}
           className="bg-green-500 text-black font-bold py-3 rounded-full"
         >
-          Subscribe for ₹100 a month
+          Subscribe for play premium songs
         </Button>
 
       </div>

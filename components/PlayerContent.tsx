@@ -4,14 +4,17 @@ import { useEffect, useState } from 'react';
 import { Song } from '@/types';
 import { usePlayer } from '@/hooks/usePlayer';
 
-import { BsPauseFill, BsPlayFill }        from 'react-icons/bs';
+import { BsPauseFill, BsPlayFill }             from 'react-icons/bs';
 import { AiFillStepBackward, AiFillStepForward } from 'react-icons/ai';
-import { HiSpeakerXMark, HiSpeakerWave } from 'react-icons/hi2';
-import { RiRepeat2Line, RiShuffleLine }   from 'react-icons/ri';
+import { HiSpeakerXMark, HiSpeakerWave }       from 'react-icons/hi2';
+import { RiRepeat2Line, RiShuffleLine }          from 'react-icons/ri';
+import { MdLyrics }                              from 'react-icons/md';
 
 import { MediaItem }  from './MediaItem';
 import { LikeButton } from './LikeButton';
 import { Slider }     from './Slider';
+import Lyrics         from './Lyrics';
+import SpeedControl   from './SpeedControl';
 
 import useSound from 'use-sound';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,15 +25,22 @@ interface PlayerContentProps {
   onOpenFull?: () => void;
 }
 
-export const PlayerContent: React.FC<PlayerContentProps> = ({ song, songUrl, onOpenFull }) => {
+export const PlayerContent: React.FC<PlayerContentProps> = ({
+  song,
+  songUrl,
+  onOpenFull,
+}) => {
   const player = usePlayer();
 
-  const [volume,    setVolume]    = useState(player.volume ?? 0.7);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress,  setProgress]  = useState(0);
-  const [duration,  setDuration]  = useState(0);
-  const [isMuted,   setIsMuted]   = useState(false);
-  const [barHeights, setBarHeights] = useState([6, 10, 7, 14, 9]);
+  const [volume,      setVolume]      = useState(player.volume ?? 0.7);
+  const [isPlaying,   setIsPlaying]   = useState(false);
+  const [progress,    setProgress]    = useState(0);
+  const [duration,    setDuration]    = useState(0);
+  const [isMuted,     setIsMuted]     = useState(false);
+  const [barHeights,  setBarHeights]  = useState([6, 10, 7, 14, 9]);
+  const [showLyrics,  setShowLyrics]  = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [speed,       setSpeed]       = useState(1); // ✅ Speed state
 
   const Icon       = isPlaying ? BsPauseFill : BsPlayFill;
   const VolumeIcon = isMuted || volume === 0 ? HiSpeakerXMark : HiSpeakerWave;
@@ -48,27 +58,54 @@ export const PlayerContent: React.FC<PlayerContentProps> = ({ song, songUrl, onO
   };
 
   const [play, { pause, sound }] = useSound(songUrl, {
-    volume: isMuted ? 0 : volume,
+    volume:  isMuted ? 0 : volume,
     onplay:  () => setIsPlaying(true),
     onend:   () => { setIsPlaying(false); onPlayNext(); },
     onpause: () => setIsPlaying(false),
-    format: ['mp3'],
+    format:  ['mp3'],
   });
 
-  useEffect(() => { sound?.play(); return () => sound?.unload(); }, [sound]);
-  useEffect(() => { if (sound) sound.volume(isMuted ? 0 : volume); }, [volume, isMuted, sound]);
+  useEffect(() => {
+    sound?.play();
+    return () => sound?.unload();
+  }, [sound]);
 
+  useEffect(() => {
+    if (sound) sound.volume(isMuted ? 0 : volume);
+  }, [volume, isMuted, sound]);
+
+  // ✅ Speed change 
+
+useEffect(() => {
+  if (!sound) return;
+  try {
+    // Howler sound ka rate directly set karo
+    sound.rate(speed);
+  } catch (e) {
+    // Fallback
+    document.querySelectorAll('audio').forEach(a => {
+      a.playbackRate = speed;
+    });
+  }
+}, [speed, sound]);
+
+  // Progress tracking
   useEffect(() => {
     const interval = setInterval(() => {
       if (sound) {
         const seek = sound.seek([]) as number;
         const dur  = sound.duration();
-        if (seek && dur) { setProgress(seek); setDuration(dur); }
+        if (seek && dur) {
+          setProgress(seek);
+          setDuration(dur);
+          setCurrentTime(seek);
+        }
       }
     }, 500);
     return () => clearInterval(interval);
   }, [sound]);
 
+  // Equalizer animation
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
@@ -77,9 +114,22 @@ export const PlayerContent: React.FC<PlayerContentProps> = ({ song, songUrl, onO
     return () => clearInterval(interval);
   }, [isPlaying]);
 
+  // Reset on song change
+  useEffect(() => {
+    setCurrentTime(0);
+    setProgress(0);
+  }, [song.id]);
+
   const handlePlay = () => { isPlaying ? pause() : play(); };
-  const handleSeek = (value: number) => { sound?.seek([value]); setProgress(value); };
+
+  const handleSeek = (value: number) => {
+    sound?.seek([value]);
+    setProgress(value);
+    setCurrentTime(value);
+  };
+
   const toggleMute = () => setIsMuted(m => !m);
+
   const progressPercent = duration ? (progress / duration) * 100 : 0;
 
   const formatTime = (time: number) => {
@@ -90,212 +140,272 @@ export const PlayerContent: React.FC<PlayerContentProps> = ({ song, songUrl, onO
   };
 
   return (
-    <div
-      className="relative flex flex-col h-full overflow-hidden"
-      style={{ fontFamily: "'Syne', sans-serif" }}
-    >
-      {/* PROGRESS BAR — top strip */}
+    <>
+      {/* Lyrics Panel */}
+      <Lyrics
+        currentTime={currentTime}
+        isVisible={showLyrics}
+        onClose={() => setShowLyrics(false)}
+      />
+
       <div
-        className="absolute top-0 left-0 right-0 h-[2px] z-10"
-        style={{ background: 'var(--border-subtle)' }}
+        className="relative flex flex-col h-full overflow-hidden"
+        style={{ fontFamily: "'Syne', sans-serif" }}
       >
-        <motion.div
-          className="h-full"
-          style={{
-            width: `${progressPercent}%`,
-            background: 'linear-gradient(90deg, var(--green), #4ade80)',
-          }}
-          transition={{ ease: 'linear' }}
-        />
-      </div>
-
-      <div className="grid grid-cols-3 h-full items-center px-4 gap-2">
-
-        {/* LEFT — song info */}
-        <div className="flex items-center gap-3 min-w-0">
+        {/* PROGRESS BAR — top strip */}
+        <div
+          className="absolute top-0 left-0 right-0 h-[2px] z-10"
+          style={{ background: 'var(--border-subtle)' }}
+        >
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onOpenFull}
-            className="relative flex-shrink-0 cursor-pointer"
-          >
-            <div
-              className="w-12 h-12 rounded-lg overflow-hidden"
-              style={{ boxShadow: 'var(--card-shadow)' }}
-            >
-              <MediaItem data={song} />
-            </div>
-            {isPlaying && (
-              <motion.div
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
-                style={{ background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }}
-              />
-            )}
-          </motion.div>
-
-          <div className="min-w-0 flex flex-col gap-0.5">
-            <p
-              className="text-sm font-semibold truncate leading-tight"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {song.title}
-            </p>
-            <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
-              {song.author}
-            </p>
-          </div>
-
-          <div className="flex-shrink-0 ml-1">
-            <LikeButton songId={song.id} />
-          </div>
+            className="h-full"
+            style={{
+              width: `${progressPercent}%`,
+              background: 'linear-gradient(90deg, var(--green), #4ade80)',
+            }}
+            transition={{ ease: 'linear' }}
+          />
         </div>
 
-        {/* CENTER — controls */}
-        <div className="flex flex-col items-center justify-center gap-2">
-          <div className="flex items-center gap-4">
+        <div className="grid grid-cols-3 h-full items-center px-4 gap-2">
 
-            <motion.button
-              whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}
-              onClick={() => player.toggleShuffle?.()}
-              className="hidden md:flex"
-              style={{ color: player.isShuffle ? 'var(--green)' : 'var(--text-muted)' }}
+          {/* ── LEFT — song info ── */}
+          <div className="flex items-center gap-3 min-w-0">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onOpenFull}
+              className="relative flex-shrink-0 cursor-pointer"
             >
-              <RiShuffleLine size={17} />
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={onPlayPrev}
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              <AiFillStepBackward size={24} />
-            </motion.button>
-
-            {/* Play/Pause */}
-            <motion.button
-              whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
-              onClick={handlePlay}
-              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, var(--green), var(--green-dark))',
-                boxShadow:  isPlaying
-                  ? '0 0 20px var(--green-glow)'
-                  : '0 4px 12px rgba(0,0,0,0.3)',
-              }}
-            >
-              <AnimatePresence mode="wait">
+              <div
+                className="w-12 h-12 rounded-lg overflow-hidden"
+                style={{ boxShadow: 'var(--card-shadow)' }}
+              >
+                <MediaItem data={song} />
+              </div>
+              {isPlaying && (
                 <motion.div
-                  key={isPlaying ? 'pause' : 'play'}
-                  initial={{ scale: 0.6, opacity: 0 }}
-                  animate={{ scale: 1,   opacity: 1 }}
-                  exit={{    scale: 0.6, opacity: 0 }}
-                  transition={{ duration: 0.1 }}
-                >
-                  <Icon size={20} className="text-black" style={{ marginLeft: isPlaying ? 0 : 1 }} />
-                </motion.div>
-              </AnimatePresence>
-            </motion.button>
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
+                  style={{
+                    background: 'var(--green)',
+                    boxShadow:  '0 0 6px var(--green)',
+                  }}
+                />
+              )}
+            </motion.div>
 
-            <motion.button
-              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-              onClick={onPlayNext}
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              <AiFillStepForward size={24} />
-            </motion.button>
+            <div className="min-w-0 flex flex-col gap-0.5">
+              <p
+                className="text-sm font-semibold truncate leading-tight"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {song.title}
+              </p>
+              <p
+                className="text-xs truncate"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                {song.author}
+              </p>
+            </div>
 
-            <motion.button
-              whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}
-              onClick={() => player.toggleRepeat?.()}
-              className="hidden md:flex"
-              style={{
-                color: player.repeatMode && player.repeatMode !== 'off'
-                  ? 'var(--green)'
-                  : 'var(--text-muted)',
-              }}
-            >
-              <RiRepeat2Line size={17} />
-            </motion.button>
+            <div className="flex-shrink-0 ml-1">
+              <LikeButton songId={song.id} />
+            </div>
           </div>
 
-          {/* Seek bar */}
-          <div className="hidden md:flex items-center gap-2 w-full max-w-[380px]">
-            <span
-              className="text-[10px] tabular-nums"
-              style={{ color: 'var(--text-muted)', minWidth: 28, textAlign: 'right' }}
-            >
-              {formatTime(progress)}
-            </span>
+          {/* ── CENTER — controls ── */}
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="flex items-center gap-4">
 
-            <div
-              className="flex-1 relative h-1 rounded-full overflow-hidden cursor-pointer group"
-              style={{ background: 'var(--border-default)' }}
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                handleSeek(((e.clientX - rect.left) / rect.width) * duration);
+              {/* Shuffle */}
+              <motion.button
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => player.toggleShuffle?.()}
+                style={{
+                  color: player.isShuffle
+                    ? 'var(--green)'
+                    : 'var(--text-muted)',
+                }}
+              >
+                <RiShuffleLine size={17} />
+              </motion.button>
+
+              {/* Prev */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onPlayPrev}
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <AiFillStepBackward size={24} />
+              </motion.button>
+
+              {/* Play/Pause */}
+              <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.93 }}
+                onClick={handlePlay}
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: 'linear-gradient(135deg, var(--green), var(--green-dark))',
+                  boxShadow: isPlaying
+                    ? '0 0 20px var(--green-glow)'
+                    : '0 4px 12px rgba(0,0,0,0.3)',
+                }}
+              >
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={isPlaying ? 'pause' : 'play'}
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1,   opacity: 1 }}
+                    exit={{    scale: 0.6, opacity: 0 }}
+                    transition={{ duration: 0.1 }}
+                  >
+                    <Icon
+                      size={20}
+                      className="text-black"
+                      style={{ marginLeft: isPlaying ? 0 : 1 }}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </motion.button>
+
+              {/* Next */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onPlayNext}
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <AiFillStepForward size={24} />
+              </motion.button>
+
+              {/* Repeat */}
+              <motion.button
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => player.toggleRepeat?.()}
+                style={{
+                  color: player.repeatMode && player.repeatMode !== 'off'
+                    ? 'var(--green)'
+                    : 'var(--text-muted)',
+                }}
+              >
+                <RiRepeat2Line size={17} />
+              </motion.button>
+            </div>
+
+            {/* Seek Bar */}
+            <div className="flex items-center gap-2 w-full max-w-[380px]">
+              <span
+                className="text-[10px] tabular-nums"
+                style={{ color: 'var(--text-muted)', minWidth: 28, textAlign: 'right' }}
+              >
+                {formatTime(progress)}
+              </span>
+
+              <div
+                className="flex-1 relative h-1 rounded-full overflow-hidden cursor-pointer group"
+                style={{ background: 'var(--border-default)' }}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  handleSeek(((e.clientX - rect.left) / rect.width) * duration);
+                }}
+              >
+                <div
+                  className="absolute left-0 top-0 h-full rounded-full transition-all"
+                  style={{
+                    width:      `${progressPercent}%`,
+                    background: 'linear-gradient(90deg, var(--green), #4ade80)',
+                  }}
+                />
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full
+                    bg-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ left: `calc(${progressPercent}% - 5px)` }}
+                />
+              </div>
+
+              <span
+                className="text-[10px] tabular-nums"
+                style={{ color: 'var(--text-muted)', minWidth: 28 }}
+              >
+                {formatTime(duration)}
+              </span>
+            </div>
+          </div>
+
+          {/* ── RIGHT — speed + lyrics + volume ── */}
+          <div className="flex justify-end items-center gap-2">
+
+            {/* Equalizer Bars */}
+            <div className="hidden lg:flex items-end gap-[3px] h-4 mr-1">
+              {barHeights.map((h, i) => (
+                <motion.div
+                  key={i}
+                  animate={{ height: isPlaying ? h : 4 }}
+                  transition={{ duration: 0.18, ease: 'easeInOut' }}
+                  style={{
+                    width:      3,
+                    borderRadius: 2,
+                    background: 'var(--green)',
+                    minHeight:  4,
+                    opacity:    0.7,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* ✅ Speed Control */}
+            <SpeedControl
+              speed={speed}
+              onChange={(s) => setSpeed(s)}
+            />
+
+            {/* Lyrics Button */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowLyrics(!showLyrics)}
+              title="Toggle Lyrics"
+              className="p-1.5 rounded-lg transition-all"
+              style={{
+                color:      showLyrics ? 'var(--green)' : 'var(--text-muted)',
+                background: showLyrics ? 'rgba(34,197,94,0.15)' : 'transparent',
               }}
             >
-              <div
-                className="absolute left-0 top-0 h-full rounded-full transition-all"
-                style={{
-                  width: `${progressPercent}%`,
-                  background: 'linear-gradient(90deg, var(--green), #4ade80)',
+              <MdLyrics size={20} />
+            </motion.button>
+
+            {/* Volume Button */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={toggleMute}
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <VolumeIcon size={20} />
+            </motion.button>
+
+            {/* Volume Slider */}
+            <div className="hidden lg:block w-[90px]">
+              <Slider
+                value={isMuted ? 0 : volume}
+                max={1}
+                step={0.01}
+                onChange={(val) => {
+                  setVolume(val);
+                  setIsMuted(false);
                 }}
-              />
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ left: `calc(${progressPercent}% - 5px)` }}
               />
             </div>
 
-            <span
-              className="text-[10px] tabular-nums"
-              style={{ color: 'var(--text-muted)', minWidth: 28 }}
-            >
-              {formatTime(duration)}
-            </span>
           </div>
         </div>
-
-        {/* RIGHT — volume + equalizer */}
-        <div className="hidden md:flex justify-end items-center gap-3">
-          {/* Equalizer bars */}
-          <div className="flex items-end gap-[3px] h-4 mr-1">
-            {barHeights.map((h, i) => (
-              <motion.div
-                key={i}
-                animate={{ height: isPlaying ? h : 4 }}
-                transition={{ duration: 0.18, ease: 'easeInOut' }}
-                style={{
-                  width: 3, borderRadius: 2,
-                  background: 'var(--green)',
-                  minHeight: 4, opacity: 0.7,
-                }}
-              />
-            ))}
-          </div>
-
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={toggleMute}
-            style={{ color: 'var(--text-muted)' }}
-          >
-            <VolumeIcon size={20} />
-          </motion.button>
-
-          <div className="w-[90px]">
-            <Slider
-              value={isMuted ? 0 : volume}
-              max={1}
-              step={0.01}
-              onChange={(val) => { setVolume(val); setIsMuted(false); }}
-            />
-          </div>
-        </div>
-
       </div>
-    </div>
+    </>
   );
 };

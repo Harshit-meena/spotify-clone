@@ -67,3 +67,43 @@ export interface Subscription {
   trial_end?: string;
   prices?: Price;
 }
+
+
+// Existing types ke saath add karo
+export interface ListeningHistory {
+  id: string;
+  user_id: string;
+  song_id: string;
+  played_at: string;
+  duration_listened: number;
+  completed: boolean;
+  songs?: Song;
+}
+
+export interface WrappedStats {
+  totalMinutes: number;
+  totalSongs: number;
+  topSongs: TopSong[];
+  topArtists: TopArtist[];
+  topGenres: TopGenre[];
+  listeningStreak: number;
+  mostActiveDay: string;
+  mostActiveTime: string;
+}
+
+export interface TopSong {
+  song_id: string;
+  title?: string;
+  author?: string;
+  play_count: number;
+}
+
+export interface TopArtist {
+  artist: string;
+  play_count: number;
+}
+
+export interface TopGenre {
+  genre: string;
+  play_count: number;
+}

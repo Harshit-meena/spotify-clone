@@ -1,129 +1,329 @@
-'use client';
+"use client";
 
-import { useRouter }                       from 'next/navigation';
-import { useEffect, useState }             from 'react';
-import { useSupabaseClient, useUser }      from '@supabase/auth-helpers-react';
-import { motion }                          from 'framer-motion';
-import { toast }                           from 'react-hot-toast';
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Camera, Loader2, Check, Trash2 } from "lucide-react";
+import useUserProfile from "@/hooks/useUserProfile";
+import toast from "react-hot-toast";
 
-const EditProfilePage = () => {
-  const router   = useRouter();
-  const supabase = useSupabaseClient();
-  const user     = useUser();
+export default function EditProfilePage() {
+  const router = useRouter();
+  const { profile, isLoading, isUpdating, updateProfile } = useUserProfile();
 
-  const [name,      setName]      = useState('');
-  const [image,     setImage]     = useState<File | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [saving,    setSaving]    = useState(false);
+  const [displayName,   setDisplayName]   = useState("");
+  const [avatarFile,    setAvatarFile]    = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isDragging,    setIsDragging]    = useState(false);
+  const [removePhoto,   setRemovePhoto]   = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ✅ FIX 1: useState ki jagah useEffect use karo
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user?.id) return;
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (data) { setName(data.full_name || ''); setAvatarUrl(data.avatar_url || null); }
-    };
-    fetchProfile();
-  }, [user?.id, supabase]);
+    if (profile?.full_name && displayName === "") {
+      setDisplayName(profile.full_name);
+    }
+  }, [profile?.full_name]);
 
-  const uploadImage = async () => {
-    if (!image || !user?.id) return null;
-    const fileExt = image.name.split('.').pop();
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-    const { error } = await supabase.storage.from('avatars').upload(fileName, image, { cacheControl: '3600', upsert: true });
-    if (error) return null;
-    return supabase.storage.from('avatars').getPublicUrl(fileName).data.publicUrl;
+  // ✅ FIX 2: Direct render mein state set karna hata diya
+
+  // Handle file select
+  const handleFileSelect = useCallback((file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file!");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB!");
+      return;
+    }
+
+    setAvatarFile(file);
+    setRemovePhoto(false);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const handleDragOver  = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = () => setIsDragging(false);
+  const handleDrop      = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setRemovePhoto(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const currentAvatar = avatarPreview || (removePhoto ? null : profile?.avatar_url);
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "U";
+    return name.charAt(0).toUpperCase();
   };
 
   const handleSave = async () => {
-    if (!user?.id) return;
-    setSaving(true);
-    let finalAvatar = avatarUrl;
-    if (image) { const uploaded = await uploadImage(); if (uploaded) finalAvatar = uploaded; }
-    const { error } = await supabase.from('profiles').upsert({ id: user.id, full_name: name, avatar_url: finalAvatar });
-    setSaving(false);
-    if (error) toast.error('Failed to save'); else { toast.success('Profile saved!'); router.push('/profile'); }
+    if (!displayName.trim()) {
+      toast.error("Display name cannot be empty!");
+      return;
+    }
+    const fileToUpload = removePhoto ? null : (avatarFile || null);
+    const success      = await updateProfile(displayName.trim(), fileToUpload);
+    if (success) {
+      router.push("/profile");
+    }
   };
 
-  const firstLetter = name?.charAt(0)?.toUpperCase();
-
-  return (
-    <div
-      className="min-h-full w-full overflow-y-auto"
-      style={{ background: 'var(--bg-primary)' }}
-    >
-      {/* HEADER */}
-      <div
-        className="flex justify-between items-center px-6 py-5 sticky top-0 z-10"
-        style={{
-          background:    'var(--player-bg)',
-          backdropFilter:'blur(20px)',
-          borderBottom:  '1px solid var(--border-subtle)',
-        }}
-      >
-        <button
-          onClick={() => router.back()}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold"
-          style={{ background: 'var(--bg-glass)', color: 'var(--text-primary)' }}
-        >
-          ✕
-        </button>
-        <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Edit profile</h1>
-        <motion.button
-          onClick={handleSave}
-          disabled={saving}
-          whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-          className="px-4 py-1.5 rounded-full text-sm font-bold"
-          style={{ background: 'var(--green)', color: 'black', opacity: saving ? 0.7 : 1 }}
-        >
-          {saving ? 'Saving…' : 'Save'}
-        </motion.button>
-      </div>
-
-      <div className="px-6 py-8 max-w-md mx-auto space-y-8">
-
-        {/* AVATAR */}
+  // ─── Loading ───────────────────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-black">
         <div className="flex flex-col items-center gap-4">
-          {avatarUrl ? (
-            <img src={avatarUrl} className="w-32 h-32 rounded-full object-cover" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }} />
-          ) : (
-            <div
-              className="w-32 h-32 rounded-full flex items-center justify-center text-5xl font-black text-black"
-              style={{ background: 'var(--green)' }}
-            >
-              {firstLetter}
-            </div>
-          )}
-          <label
-            className="px-4 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all"
-            style={{ border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+          <Loader2 className="w-8 h-8 text-green-500 animate-spin" />
+          <p className="text-white/60">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Main UI ───────────────────────────────────────────────────────────────
+  return (
+    <div className="h-full bg-black overflow-y-auto">
+      <div className="max-w-2xl mx-auto px-6 py-8">
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-10">
+          <button
+            onClick={() => router.back()}
+            className="w-9 h-9 bg-white/10 hover:bg-white/20
+              rounded-full flex items-center justify-center transition"
           >
-            Change photo
-            <input type="file" accept="image/*" className="hidden" onChange={e => setImage(e.target.files?.[0] || null)} />
-          </label>
+            <X className="w-5 h-5 text-white" />
+          </button>
+
+          <h1 className="text-white text-xl font-bold">Edit Profile</h1>
+
+          <button
+            onClick={handleSave}
+            disabled={isUpdating}
+            className="bg-green-500 hover:bg-green-400 text-black font-bold
+              px-6 py-2 rounded-full transition disabled:opacity-50
+              disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isUpdating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                Save
+              </>
+            )}
+          </button>
         </div>
 
-        {/* NAME INPUT */}
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>
-            Display name
-          </p>
+        {/* Avatar Section */}
+        <div className="flex flex-col items-center mb-10">
+
+          {/* Hidden File Input */}
           <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            className="w-full rounded-xl px-4 py-3 text-base outline-none transition-all"
-            style={{
-              background:  'var(--bg-glass)',
-              border:      '1px solid var(--border-default)',
-              color:       'var(--text-primary)',
-            }}
-            onFocus={e => (e.currentTarget.style.borderColor = 'var(--green)')}
-            onBlur={e  => (e.currentTarget.style.borderColor = 'var(--border-default)')}
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleInputChange}
+            className="hidden"
+            id="avatar-input"
           />
+
+          {/* Avatar with Drag & Drop */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className="relative group"
+          >
+            {/* Avatar Circle */}
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              className={`relative w-36 h-36 rounded-full overflow-hidden
+                cursor-pointer border-4 transition-all duration-300
+                ${isDragging
+                  ? "border-green-500 scale-105"
+                  : "border-transparent group-hover:border-white/30"
+                }`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {currentAvatar ? (
+                <Image
+                  src={currentAvatar}
+                  alt="Profile"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-green-500">
+                  <span className="text-black text-5xl font-black">
+                    {getInitials(displayName || profile?.full_name)}
+                  </span>
+                </div>
+              )}
+
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-black/50 opacity-0
+                group-hover:opacity-100 transition-opacity
+                flex flex-col items-center justify-center gap-2"
+              >
+                <Camera className="w-8 h-8 text-white" />
+                <span className="text-white text-xs font-semibold">Change Photo</span>
+              </div>
+
+              {/* Drag Overlay */}
+              {isDragging && (
+                <div className="absolute inset-0 bg-green-500/30 flex items-center justify-center">
+                  <p className="text-white text-sm font-bold">Drop here!</p>
+                </div>
+              )}
+            </motion.div>
+
+            {/* New Photo Badge */}
+            <AnimatePresence>
+              {avatarPreview && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="absolute -top-1 -right-1 w-6 h-6 bg-green-500
+                    rounded-full flex items-center justify-center shadow-lg"
+                >
+                  <Check className="w-4 h-4 text-black" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-4">
+            <label
+              htmlFor="avatar-input"
+              className="cursor-pointer bg-white/10 hover:bg-white/20
+                text-white text-sm font-semibold px-5 py-2
+                rounded-full transition flex items-center gap-2"
+            >
+              <Camera className="w-4 h-4" />
+              Change Photo
+            </label>
+
+            {(currentAvatar || avatarFile) && (
+              <button
+                onClick={handleRemovePhoto}
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-400
+                  text-sm font-semibold px-5 py-2 rounded-full transition
+                  flex items-center gap-2 border border-red-500/30"
+              >
+                <Trash2 className="w-4 h-4" />
+                Remove
+              </button>
+            )}
+          </div>
+
+          {/* Hint */}
+          <p className="text-white/30 text-xs mt-2">or drag & drop an image</p>
+
+          {/* Selected File Info */}
+          <AnimatePresence>
+            {avatarFile && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-3 bg-green-500/10 border border-green-500/20
+                  rounded-xl px-4 py-2 flex items-center gap-2"
+              >
+                <Check className="w-4 h-4 text-green-400" />
+                <span className="text-green-400 text-sm">
+                  {avatarFile.name} selected
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        {/* Display Name */}
+        <div className="mb-6">
+          <label className="block text-white/60 text-xs uppercase tracking-widest mb-3 font-semibold">
+            Display Name
+          </label>
+          <input
+            type="text"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            maxLength={50}
+            className="w-full bg-white/5 border border-white/10 text-white
+              rounded-xl px-5 py-4 text-base focus:outline-none
+              focus:border-green-500 focus:ring-2 focus:ring-green-500/20
+              transition placeholder:text-white/30"
+            placeholder="Your display name..."
+          />
+          <div className="flex justify-between mt-2">
+            <p className="text-white/30 text-xs">This is how others will see you</p>
+            <p className="text-white/30 text-xs">{displayName.length}/50</p>
+          </div>
+        </div>
+
+        {/* Email */}
+        <div className="mb-8">
+          <label className="block text-white/60 text-xs uppercase tracking-widest mb-3 font-semibold">
+            Email
+          </label>
+          <div className="w-full bg-white/5 border border-white/5 text-white/40
+            rounded-xl px-5 py-4 text-base cursor-not-allowed"
+          >
+            {profile?.email || "Not available"}
+          </div>
+          <p className="text-white/20 text-xs mt-2">Email cannot be changed</p>
+        </div>
+
+        {/* Save Button Bottom */}
+        <button
+          onClick={handleSave}
+          disabled={isUpdating || !displayName.trim()}
+          className="w-full bg-green-500 hover:bg-green-400 text-black font-black
+            py-4 rounded-2xl text-lg transition disabled:opacity-40
+            disabled:cursor-not-allowed flex items-center justify-center gap-3"
+        >
+          {isUpdating ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Saving Changes...
+            </>
+          ) : (
+            <>
+              <Check className="w-5 h-5" />
+              Save Changes
+            </>
+          )}
+        </button>
 
       </div>
     </div>
   );
-};
-
-export default EditProfilePage;
+}

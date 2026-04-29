@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useGetSongById }  from '@/hooks/useGetSongById';
 import { useLoadSongUrl }  from '@/hooks/useLoadSongUrl';
 import { usePlayer }       from '@/hooks/usePlayer';
+import SpeedControl from '@/components/SpeedControl';
 import { FullPlayer }      from './FullPlayer';
 import { PlayerContent }   from './PlayerContent';
 import { motion, AnimatePresence } from 'framer-motion';
